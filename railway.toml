@@ -1,0 +1,6 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "./SecretariaIa.Api/Dockerfile"
+
+[deploy]
+startCommand = "dotnet SecretariaIa.Api.dll"
