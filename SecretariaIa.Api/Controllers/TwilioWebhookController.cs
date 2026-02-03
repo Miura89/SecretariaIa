@@ -26,26 +26,15 @@ namespace SecretariaIa.Api.Controllers
 
 			var userPhone = inbound.From.Replace("whatsapp:", "").Trim();
 
-			var datasetPath = Path.Combine(_env.ContentRootPath, "Ai", "TrainingSamples", "training_command_create_expense.json");
+			var examplesJson = """
+				{
+				  "version":"1.0",
+				  "samples":[
+					{"message":"Gastei 40 no posto","expected":{"intent":1,"amount":40,"currency":1,"category":2,"description":"posto","occurredAt":"today","needs_clarification":false,"confidence":0.9,"missing_fields":null}}
+				  ]
+				}
+				""";
 
-			_logger.LogInformation("ContentRoot: {root}", _env.ContentRootPath);
-
-			var aiDir = Path.Combine(_env.ContentRootPath, "Ai");
-			_logger.LogInformation("Ai dir exists? {ok}", Directory.Exists(aiDir));
-
-			if (Directory.Exists(aiDir))
-			{
-				var files = Directory.GetFiles(aiDir, "*", SearchOption.AllDirectories);
-				_logger.LogInformation("Ai files: {files}", string.Join(" | ", files));
-			}
-
-			if (!System.IO.File.Exists(datasetPath))
-			{
-				_logger.LogError("Dataset não encontrado: {path}", datasetPath);
-				return Ok(); // evita crash e evita retry louco do Twilio
-			}
-
-			var examplesJson = System.IO.File.ReadAllText(datasetPath);
 			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson);
 
 			string reply;
