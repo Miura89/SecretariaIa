@@ -28,6 +28,17 @@ namespace SecretariaIa.Api.Controllers
 
 			var datasetPath = Path.Combine(_env.ContentRootPath, "Ai", "TrainingSamples", "training_command_create_expense.json");
 
+			_logger.LogInformation("ContentRoot: {root}", _env.ContentRootPath);
+
+			var aiDir = Path.Combine(_env.ContentRootPath, "Ai");
+			_logger.LogInformation("Ai dir exists? {ok}", Directory.Exists(aiDir));
+
+			if (Directory.Exists(aiDir))
+			{
+				var files = Directory.GetFiles(aiDir, "*", SearchOption.AllDirectories);
+				_logger.LogInformation("Ai files: {files}", string.Join(" | ", files));
+			}
+
 			if (!System.IO.File.Exists(datasetPath))
 			{
 				_logger.LogError("Dataset não encontrado: {path}", datasetPath);
