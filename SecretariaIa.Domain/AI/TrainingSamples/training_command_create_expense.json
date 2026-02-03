@@ -1,0 +1,186 @@
+﻿{
+  "version": "1.0",
+  "language": "pt-BR",
+  "timezone": "America/Sao_Paulo",
+  "samples": [
+    {
+      "message": "Gastei 45 reais no almoço",
+      "expected": {
+        "intent": 1,
+        "amount": 45.00,
+        "currency": 1,
+        "category": 1,
+        "description": "almoço",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.96
+      }
+    },
+    {
+      "message": "Paguei 12,50 no café",
+      "expected": {
+        "intent": 1,
+        "amount": 12.50,
+        "currency": 1,
+        "category": 1,
+        "description": "café",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.97
+      }
+    },
+    {
+      "message": "Uber deu 31 reais",
+      "expected": {
+        "intent": 1,
+        "amount": 31.00,
+        "currency": 1,
+        "category": 2,
+        "description": "Uber",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.95
+      }
+    },
+    {
+      "message": "Ontem gastei 220 no mercado",
+      "expected": {
+        "intent": 1,
+        "amount": 220.00,
+        "currency": 1,
+        "category": 1,
+        "description": "mercado",
+        "occurredAt": "yesterday",
+        "needs_clarification": false,
+        "confidence": 0.95
+      }
+    },
+    {
+      "message": "Paguei 150 reais de luz",
+      "expected": {
+        "intent": 1,
+        "amount": 150.00,
+        "currency": 1,
+        "category": 6,
+        "description": "conta de luz",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.94
+      }
+    },
+    {
+      "message": "Gastei 89,90 na farmácia",
+      "expected": {
+        "intent": 1,
+        "amount": 89.90,
+        "currency": 1,
+        "category": 4,
+        "description": "farmácia",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.96
+      }
+    },
+    {
+      "message": "Cinema 60 reais",
+      "expected": {
+        "intent": 1,
+        "amount": 60.00,
+        "currency": 1,
+        "category": 5,
+        "description": "cinema",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.93
+      }
+    },
+    {
+      "message": "Comprei roupas por 320",
+      "expected": {
+        "intent": 1,
+        "amount": 320.00,
+        "currency": 1,
+        "category": 7,
+        "description": "roupas",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.94
+      }
+    },
+    {
+      "message": "Mensalidade da faculdade 980",
+      "expected": {
+        "intent": 1,
+        "amount": 980.00,
+        "currency": 1,
+        "category": 8,
+        "description": "faculdade",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.95
+      }
+    },
+    {
+      "message": "Paguei o aluguel",
+      "expected": {
+        "intent": 1,
+        "amount": null,
+        "currency": 1,
+        "category": 3,
+        "description": "aluguel",
+        "occurredAt": "today",
+        "needs_clarification": true,
+        "missing_fields": [ "amount" ],
+        "confidence": 0.61
+      },
+      "returning": {
+        "message": "Qual foi o valor do aluguel?",
+        "language": 1
+      }
+    },
+    {
+      "message": "Gastei em gasolina",
+      "expected": {
+        "intent": 1,
+        "amount": null,
+        "currency": 1,
+        "category": 2,
+        "description": "gasolina",
+        "occurredAt": "today",
+        "needs_clarification": true,
+        "missing_fields": [ "amount" ],
+        "confidence": 0.58
+      },
+      "returning": {
+        "message": "Quanto você gastou com gasolina?",
+        "language": 1
+      }
+    },
+    {
+      "message": "Ontem paguei a internet 120",
+      "expected": {
+        "intent": 1,
+        "amount": 120.00,
+        "currency": 1,
+        "category": 6,
+        "description": "internet",
+        "occurredAt": "yesterday",
+        "needs_clarification": false,
+        "confidence": 0.94
+      }
+    },
+    {
+      "message": "Gastei 200 com coisas aleatórias",
+      "expected": {
+        "intent": 1,
+        "amount": 200.00,
+        "currency": 1,
+        "category": 9,
+        "description": "gastos diversos",
+        "occurredAt": "today",
+        "needs_clarification": false,
+        "confidence": 0.91
+      }
+    }
+  ]
+}
