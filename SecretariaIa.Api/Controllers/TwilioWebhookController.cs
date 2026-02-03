@@ -26,7 +26,7 @@ namespace SecretariaIa.Api.Controllers
 
 			var userPhone = inbound.From.Replace("whatsapp:", "").Trim();
 
-			var datasetPath = Path.Combine(_env.ContentRootPath, "SecretariaIa.Api", "Ai", "TrainingSamples", "training_command_create_expense.json");
+			var datasetPath = Path.Combine(_env.ContentRootPath, "Ai", "TrainingSamples", "training_command_create_expense.json");
 
 			if (!System.IO.File.Exists(datasetPath))
 			{
