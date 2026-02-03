@@ -26,11 +26,7 @@ namespace SecretariaIa.Api.Controllers
 
 			var userPhone = inbound.From.Replace("whatsapp:", "").Trim();
 
-			var datasetPath = Path.Combine(
-				Directory.GetParent(_env.ContentRootPath)!.FullName,
-				"SecretariaIa.Domain", "Ai", "TrainingSamples", "secretaria_training_v1.json"
-			);
-
+			var datasetPath = Path.Combine(_env.ContentRootPath, "Ai", "TrainingSamples", "training_command_create_expense.json");
 			var examplesJson = System.IO.File.ReadAllText(datasetPath);
 
 			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson);
