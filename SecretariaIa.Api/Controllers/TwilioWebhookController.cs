@@ -50,6 +50,7 @@ namespace SecretariaIa.Api.Controllers
 			}
 
 			await _sender.SendAsync(userPhone, reply);
+			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
 			return Ok();
 		}
 
