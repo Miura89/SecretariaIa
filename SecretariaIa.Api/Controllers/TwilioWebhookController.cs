@@ -19,39 +19,51 @@ namespace SecretariaIa.Api.Controllers
 			_logger = logger;
 			_sender = sender;
 		}
-		[HttpPost("whatsapp")]
+		[HttpPost("sms")]
 		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound)
 		{
-			_logger.LogInformation("Inbound: From={From} Body={Body} sid={Sid}", [inbound.From, inbound.Body, inbound.MessageSid]);
+			_logger.LogInformation(
+				"Inbound SMS: From={From} To={To} Body={Body} MessageSid={MessageSid}",
+				inbound.From, inbound.To, inbound.Body, inbound.MessageSid
+			);
 
-			var userPhone = inbound.From.Replace("whatsapp:", "").Trim();
+			var userPhone = NormalizeE164(inbound.From);
 
 			var examplesJson = """
-				{
-				  "version":"1.0",
-				  "samples":[
-					{"message":"Gastei 40 no posto","expected":{"intent":1,"amount":40,"currency":1,"category":2,"description":"posto","occurredAt":"today","needs_clarification":false,"confidence":0.9,"missing_fields":null}}
-				  ]
-				}
-				""";
+        {
+          "version":"1.0",
+          "samples":[
+            {"message":"Gastei 40 no posto","expected":{"intent":1,"amount":40,"currency":1,"category":2,"description":"posto","occurredAt":"today","needs_clarification":false,"confidence":0.9,"missing_fields":null}}
+          ]
+        }
+        """;
 
 			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson);
 
-			string reply;
-			if (parsed.NeedsClarification)
-			{
-				reply = parsed.MissingFields?.Contains("amount") == true
+			string reply = parsed.NeedsClarification
+				? (parsed.MissingFields?.Contains("amount") == true
 					? "Qual foi o valor? (ex: 37,90)"
-					: "Consegue detalhar um pouco mais?";
-			}
-			else
-			{
-				reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
-			}
+					: "Consegue detalhar um pouco mais?")
+				: $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
 
-			await _sender.SendAsync(userPhone, reply);
-			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
+			var sid = await _sender.SendAsync(userPhone, reply);
+
+			_logger.LogInformation(
+				"Reply sent. To={To} ReplySid={ReplySid} Amount={Amount} Category={Category}",
+				userPhone, sid, parsed.Amount, parsed.Category
+			);
+
 			return Ok();
+		}
+
+		private static string NormalizeE164(string from)
+		{
+			var cleaned = (from ?? string.Empty).Trim();
+
+			if (cleaned.StartsWith("whatsapp:", StringComparison.OrdinalIgnoreCase))
+				cleaned = cleaned["whatsapp:".Length..].Trim();
+
+			return cleaned;
 		}
 
 		public record TwilioInboundDto(
@@ -59,6 +71,6 @@ namespace SecretariaIa.Api.Controllers
 			[FromForm(Name = "To")] string To,
 			[FromForm(Name = "Body")] string Body,
 			[FromForm(Name = "MessageSid")] string MessageSid
-			);
+		);
 	}
 }

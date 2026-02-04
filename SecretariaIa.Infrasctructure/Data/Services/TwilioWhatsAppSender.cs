@@ -2,8 +2,9 @@
 using SecretariaIa.Common.Interfaces;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
+using Twilio.TwiML.Voice;
 using Twilio.Types;
-
+using Task = System.Threading.Tasks.Task;
 public class TwilioWhatsAppSender : ITwilioWhatsAppSender
 {
 	private readonly IConfiguration _config;
@@ -14,16 +15,17 @@ public class TwilioWhatsAppSender : ITwilioWhatsAppSender
 	{
 		var sid = _config["Twilio:AccountSid"]!;
 		var token = _config["Twilio:AuthToken"]!;
-		var from = _config["Twilio:WhatsAppFrom"]!;
+		var from = _config["Twilio:From"]!;
 
 		TwilioClient.Init(sid, token);
 
 		var msg = MessageResource.Create(
 			from: new PhoneNumber(from),
-			to: new PhoneNumber("whatsapp:" + toE164),
+			to: new PhoneNumber(toE164),
 			body: text
 		);
 
 		return Task.FromResult(msg.Sid);
 	}
+
 }
