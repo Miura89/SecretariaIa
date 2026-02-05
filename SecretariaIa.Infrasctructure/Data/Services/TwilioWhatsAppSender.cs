@@ -10,7 +10,7 @@ public class TwilioWhatsAppSender : ITwilioWhatsAppSender
 
 	public TwilioWhatsAppSender(IConfiguration config) => _config = config;
 
-	public Task<string> SendAsync(string toE164, string text)
+	public Task<string> SendAsync(string to, string text)
 	{
 		var sid = _config["Twilio:AccountSid"]!;
 		var token = _config["Twilio:AuthToken"]!;
@@ -20,7 +20,7 @@ public class TwilioWhatsAppSender : ITwilioWhatsAppSender
 
 		var msg = MessageResource.Create(
 			from: new PhoneNumber(from),
-			to: new PhoneNumber("whatsapp:" + toE164),
+			to: new PhoneNumber(to),
 			body: text
 		);
 

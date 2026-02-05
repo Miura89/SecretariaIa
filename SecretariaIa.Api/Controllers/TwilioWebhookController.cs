@@ -24,7 +24,7 @@ namespace SecretariaIa.Api.Controllers
 		{
 			_logger.LogInformation("Inbound: From={From} Body={Body} sid={Sid}", [inbound.From, inbound.Body, inbound.MessageSid]);
 
-			var userPhone = inbound.From.Replace("whatsapp:", "").Trim();
+			var userPhone = inbound.From;
 
 			var examplesJson = """
 				{

@@ -11,7 +11,7 @@ namespace SecretariaIa.Domain.Entities
 		{
 			
 		}
-		public Profile(Currency currency, string timeZone, Language language, decimal monthlyBudget, IdentityUser identityUser, Guid identityUserId)
+		public Profile(Currency? currency, string? timeZone, Language? language, decimal? monthlyBudget, IdentityUser identityUser, Guid identityUserId)
 		{
 			SetCurrency(currency);
 			SetTimeZone(timeZone);
@@ -23,10 +23,10 @@ namespace SecretariaIa.Domain.Entities
 		}
 		public IdentityUser IdentityUser { get; set; }
 		public Guid IdentityUserId { get; set; }
-		public Currency Currency { get; private set; }
-		public string TimeZone { get; private set; } = string.Empty;
-		public Language Language { get; private set; }
-		public decimal MonthlyBudget { get; private set; }
+		public Currency? Currency { get; private set; }
+		public string? TimeZone { get; private set; } = string.Empty;
+		public Language? Language { get; private set; }
+		public decimal? MonthlyBudget { get; private set; }
 
 		public Profile SetIdentityUser(IdentityUser identityUser, Guid identityUserId)
 		{
@@ -34,22 +34,22 @@ namespace SecretariaIa.Domain.Entities
 			IdentityUserId = identityUserId;
 			return this;
 		}
-		public Profile SetCurrency(Currency currency)
+		public Profile SetCurrency(Currency? currency)
 		{
 			Currency = currency;
 			return this;
 		}
-		public Profile SetTimeZone(string timeZone)
+		public Profile SetTimeZone(string? timeZone)
 		{
 			TimeZone = timeZone;
 			return this;
 		}
-		public Profile SetLanguage(Language language)
+		public Profile SetLanguage(Language? language)
 		{
 			Language = language;
 			return this;
 		}
-		public Profile SetMonthlyBudget(decimal monthlyBudget)
+		public Profile SetMonthlyBudget(decimal? monthlyBudget)
 		{
 			MonthlyBudget = monthlyBudget;
 			return this;

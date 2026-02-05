@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SecretariaIa.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,12 +11,13 @@ namespace SecretariaIa.Domain.Entities
 		{
 			
 		}
-		public IdentityUser(string name, string email, string password, string phone)
+		public IdentityUser(string name, string email, string password, string phone, TypeUser type)
 		{
 			SetName(name);
 			SetEmail(email);
 			SetPassword(password);
 			SetPhone(phone);
+			SetTypeUser(type);
 
 			Validate();
 		}
@@ -24,6 +26,7 @@ namespace SecretariaIa.Domain.Entities
 		public string Email { get; private set; } = string.Empty;
 		public string Password { get; private set; } = string.Empty;
 		public string Phone { get; private set; } = string.Empty;
+		public TypeUser Type { get; private set; }
 		public Profile? Profile { get; set; }
 		public ICollection<MessageLog>? MessageLogs { get; set; }
 		public ICollection<Expenses>? Expenses { get; set; }
@@ -35,6 +38,11 @@ namespace SecretariaIa.Domain.Entities
 		public IdentityUser SetEmail(string email)
 		{
 			Email = email;
+			return this;
+		}
+		public IdentityUser SetTypeUser(TypeUser type)
+		{
+			Type = type;
 			return this;
 		}
 		public IdentityUser SetPassword(string password)
