@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SecretariaIa.Infrasctructure.Data.EF;
@@ -11,9 +12,11 @@ using SecretariaIa.Infrasctructure.Data.EF;
 namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260209125340_initialCase2")]
+    partial class initialCase2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,11 +82,6 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Country")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(2);
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -101,9 +99,6 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                     b.Property<Guid?>("ExcludedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("FormatedPhone")
-                        .HasColumnType("text");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -116,9 +111,6 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -143,8 +135,8 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                     b.Property<int>("Command")
                         .HasColumnType("integer");
 
-                    b.Property<double>("Confidence")
-                        .HasColumnType("double precision");
+                    b.Property<decimal>("Confidence")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

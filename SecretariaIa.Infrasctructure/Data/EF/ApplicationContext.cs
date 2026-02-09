@@ -1,7 +1,9 @@
 ﻿using Flunt.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using SecretariaIa.Domain.Entities;
 using SecretariaIa.Domain.Interfaces;
+using SecretariaIa.Infrasctructure.Data.EF.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -21,7 +23,10 @@ namespace SecretariaIa.Infrasctructure.Data.EF
 		}
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
-
+			modelBuilder.ApplyConfiguration<Expenses>(new ExpensesConfiguration());
+			modelBuilder.ApplyConfiguration<MessageLog>(new MessageLogConfiguration());
+			modelBuilder.ApplyConfiguration<IdentityUser>(new IdentityUserConfiguration());
+			modelBuilder.ApplyConfiguration<Profile>(new ProfileConfiguration());
 			modelBuilder.Ignore<Notification>();
 		}
 	}

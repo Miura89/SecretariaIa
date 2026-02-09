@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using SecretariaIa.Common.DTOs;
 using SecretariaIa.Common.Interfaces;
+using SecretariaIa.Domain.RequestDTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;

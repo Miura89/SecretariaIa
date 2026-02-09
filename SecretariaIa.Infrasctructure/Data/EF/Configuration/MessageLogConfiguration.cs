@@ -19,7 +19,7 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Configuration
 			builder.Property(x => x.From);
 			builder.Property(x => x.To);
 			builder.Property(x => x.Command);
-			builder.Property(x=>x.ParsedJson).HasColumnType("nvarchar(max)");
+			builder.Property(x => x.ParsedJson);
 			builder.Property(x => x.Confidence);
 			builder.Property(x => x.Status);
 			builder.Property(x => x.ReceivedAt);

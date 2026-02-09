@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using SecretariaIa.Common.DTOs;
 using SecretariaIa.Common.Interfaces;
+using SecretariaIa.Domain.Commands.ExpensesCommands;
 
 namespace SecretariaIa.Api.Controllers
 {
@@ -11,16 +14,18 @@ namespace SecretariaIa.Api.Controllers
 		private readonly IWebHostEnvironment _env;
 		private readonly ITwilioWhatsAppSender _sender;
 		private readonly ILogger<TwilioWebhookController> _logger;
+		private readonly IMediator _mediator;
 
-		public TwilioWebhookController(IOpenAiService openAiService, IWebHostEnvironment env, ILogger<TwilioWebhookController> logger, ITwilioWhatsAppSender sender)
+		public TwilioWebhookController(IOpenAiService openAiService, IWebHostEnvironment env, ILogger<TwilioWebhookController> logger, ITwilioWhatsAppSender sender, IMediator mediator)
 		{
 			_openAiService = openAiService;
 			_env = env;
 			_logger = logger;
 			_sender = sender;
+			_mediator = mediator;
 		}
-		[HttpPost("sms")]
-		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound)
+		[HttpPost("whatsapp")]
+		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
 		{
 			_logger.LogInformation("Inbound: From={From} Body={Body} sid={Sid}", [inbound.From, inbound.Body, inbound.MessageSid]);
 
@@ -38,7 +43,9 @@ namespace SecretariaIa.Api.Controllers
 			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson);
 
 			string reply;
-			if (parsed.NeedsClarification)
+			const double CONFIDENCE_THRESHOLD = 0.80;
+
+			if (parsed.NeedsClarification || parsed.Confidence < CONFIDENCE_THRESHOLD)
 			{
 				reply = parsed.MissingFields?.Contains("amount") == true
 					? "Qual foi o valor? (ex: 37,90)"
@@ -48,17 +55,13 @@ namespace SecretariaIa.Api.Controllers
 			{
 				reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
 			}
+			var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), cancellationToken);
+			
+			if (response.Success)
+				await _sender.SendAsync(userPhone, reply);
 
-			await _sender.SendAsync(userPhone, reply);
 			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
 			return Ok();
 		}
-
-		public record TwilioInboundDto(
-			[FromForm(Name = "From")] string From,
-			[FromForm(Name = "To")] string To,
-			[FromForm(Name = "Body")] string Body,
-			[FromForm(Name = "MessageSid")] string MessageSid
-			);
 	}
 }

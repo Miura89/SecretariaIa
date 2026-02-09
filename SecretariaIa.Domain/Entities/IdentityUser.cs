@@ -11,13 +11,16 @@ namespace SecretariaIa.Domain.Entities
 		{
 			
 		}
-		public IdentityUser(string name, string email, string password, string phone, TypeUser type)
+		public IdentityUser(string name, string email, string password, string phone, TypeUser type, Roles role, string formatedPhone, Country country)
 		{
 			SetName(name);
 			SetEmail(email);
 			SetPassword(password);
 			SetPhone(phone);
 			SetTypeUser(type);
+			SetRole(role);
+			SetFormattedPhone(formatedPhone);
+			SetCountry(country);
 
 			Validate();
 		}
@@ -26,7 +29,10 @@ namespace SecretariaIa.Domain.Entities
 		public string Email { get; private set; } = string.Empty;
 		public string Password { get; private set; } = string.Empty;
 		public string Phone { get; private set; } = string.Empty;
+		public string FormatedPhone { get; private set; } = string.Empty;
+		public Country Country { get; private set; }
 		public TypeUser Type { get; private set; }
+		public Roles Role { get; private set; }
 		public Profile? Profile { get; set; }
 		public ICollection<MessageLog>? MessageLogs { get; set; }
 		public ICollection<Expenses>? Expenses { get; set; }
@@ -43,6 +49,21 @@ namespace SecretariaIa.Domain.Entities
 		public IdentityUser SetTypeUser(TypeUser type)
 		{
 			Type = type;
+			return this;
+		}
+		public IdentityUser SetRole(Roles role)
+		{
+			Role = role;
+			return this;
+		}
+		public IdentityUser SetFormattedPhone(string formatedPhone)
+		{
+			FormatedPhone = formatedPhone;
+			return this;
+		}
+		public IdentityUser SetCountry(Country country)
+		{
+			Country = country;
 			return this;
 		}
 		public IdentityUser SetPassword(string password)

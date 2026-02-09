@@ -12,7 +12,7 @@ namespace SecretariaIa.Domain.Entities
 		{
 			
 		}
-		public MessageLog(string from, string to, DateTimeOffset receivedAt, CommandsMessage command, string parsedJson, decimal confidence, StatusMessage status, bool needsClarifications, IdentityUser identityUser, Guid identityUserId)
+		public MessageLog(string from, string to, DateTimeOffset receivedAt, CommandsMessage command, string parsedJson, double confidence, StatusMessage status, bool needsClarifications, IdentityUser identityUser, Guid identityUserId)
 		{
 			SetFrom(from);
 			SetTo(to);
@@ -33,7 +33,7 @@ namespace SecretariaIa.Domain.Entities
 		public DateTimeOffset ReceivedAt { get; set; }
 		public CommandsMessage Command { get; private set; }
 		public string ParsedJson { get; private set; } = "{}";
-		public decimal Confidence { get; set; }
+		public double Confidence { get; set; }
 		public StatusMessage Status { get; private set; }
 		public bool NeedsClarification { get; private set; }
 
@@ -77,7 +77,7 @@ namespace SecretariaIa.Domain.Entities
 			Status = status;
 			return this;
 		}
-		public MessageLog SetConfidence(decimal confidence)
+		public MessageLog SetConfidence(double confidence)
 		{
 			Confidence = confidence;
 			return this;

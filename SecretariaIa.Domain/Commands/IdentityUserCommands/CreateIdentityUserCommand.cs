@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SecretariaIa.Domain.Commands
+namespace SecretariaIa.Domain.Commands.IdentityUserCommands
 {
 	public class CreateIdentityUserCommand : IRequest<CommandResultResponse<Guid>>
 	{
@@ -17,7 +17,10 @@ namespace SecretariaIa.Domain.Commands
 		public string Email { get; set; }
 		public string Password { get; set; }
 		public string Phone { get; set; }
+		public Roles Role { get; set; }
 		public TypeUser TypeUser { get; set; }
+		public string FormatedPhone { get; set; }
+		public Country Country { get; set; }
 		public Currency? Currency { get; set; }
 		public decimal? MonthlyIncome { get; set; }
 		public Language? Language { get; set; }
@@ -50,7 +53,12 @@ namespace SecretariaIa.Domain.Commands
 
 			var hash = _hash.GenerateHash(request.Password);
 
-			IdentityUser entity = new(request.Name, request.Email, hash!, request.Phone, request.TypeUser);
+			if(request.TypeUser == TypeUser.CUSTOMER)
+			{
+				request.Role = Roles.Customer;
+			}
+
+			IdentityUser entity = new(request.Name, request.Email, hash!, request.Phone, request.TypeUser, request.Role, request.FormatedPhone, request.Country);
 			await _repository.CreateAsync(entity, request.CreateBy);
 
 			if(entity.Type == TypeUser.CUSTOMER)

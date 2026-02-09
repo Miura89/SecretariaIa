@@ -9,16 +9,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddMediator(Assembly.GetExecutingAssembly());
-//builder.Services.AddSecurity(builder.Configuration);
+builder.Services.AddSecurity(builder.Configuration);
 builder.Services.AddSwagger<SwaggerFillter>(builder.Configuration);
+
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy("AllowFrontend",
+		policy =>
+		{
+			policy
+				.WithOrigins(
+					"http://localhost:5173",
+					"https://secretariamonitoringapp-production.up.railway.app/"
+					// seu frontend local (Vite)
+				)
+				.AllowAnyHeader()
+				.AllowAnyMethod()
+				.AllowCredentials(); // se usar cookies ou auth
+		});
+});
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 var app = builder.Build();
-
-Console.WriteLine("OPENAI KEY: " + (Environment.GetEnvironmentVariable("OpenAI__ApiKey") != null));
-Console.WriteLine("TWILIO SID: " + (Environment.GetEnvironmentVariable("Twilio__AccountSid") != null));
-Console.WriteLine("TWILIO TOKEN: " + (Environment.GetEnvironmentVariable("Twilio__AuthToken") != null));
-
 
 
 // Configure the HTTP request pipeline.
@@ -28,6 +40,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 	app.UseHttpsRedirection();
 }
+app.UseCors("AllowFrontend");
 
 app.UseAuthorization();
 

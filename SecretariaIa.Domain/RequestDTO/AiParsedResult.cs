@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace SecretariaIa.Common.DTOs
+namespace SecretariaIa.Domain.RequestDTO
 {
 	public class AiParsedResult
 	{
@@ -31,10 +31,9 @@ namespace SecretariaIa.Common.DTOs
 		public bool NeedsClarification { get; set; }
 
 		[JsonPropertyName("confidence")]
-		public decimal Confidence { get; set; }
+		public double Confidence { get; set; }
 
 		[JsonPropertyName("missing_fields")]
 		public string[]? MissingFields { get; set; }
 	}
-
 }
