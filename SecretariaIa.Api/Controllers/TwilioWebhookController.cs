@@ -5,6 +5,7 @@ using SecretariaIa.Api.Queries.IdentityUserQueries;
 using SecretariaIa.Common.DTOs;
 using SecretariaIa.Common.Exceptions;
 using SecretariaIa.Common.Interfaces;
+using SecretariaIa.Common.Util;
 using SecretariaIa.Domain.Commands.ExpensesCommands;
 
 namespace SecretariaIa.Api.Controllers
@@ -74,7 +75,7 @@ namespace SecretariaIa.Api.Controllers
 				var response = await _mediator.Send(new GetExpensesByDayQuery(userPhone), cancellationToken);
 				if (response.Any())
 				{
-					reply = "Seus gastos de hoje:\n" + string.Join("\n", response.Select(e => $"- R$ {e.Value:0.00} ({e.Category})"));
+					reply = "Seus gastos de hoje:\n" + string.Join("\n", response.Select(e => $"- R$ {e.Value:0.00} ({CategoryFormatter.Format(e.Category)}) - {e.Description} - {DateFormatter.FormatDateTimeHuman(e.Date)}"));
 					await _sender.SendAsync(userPhone, reply);
 				}
 				else
