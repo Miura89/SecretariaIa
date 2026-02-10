@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SecretariaIa.Api.Queries.ExpensesUserQueries;
 using SecretariaIa.Api.Queries.IdentityUserQueries;
 using SecretariaIa.Common.DTOs;
 using SecretariaIa.Common.Exceptions;
@@ -41,7 +42,7 @@ namespace SecretariaIa.Api.Controllers
 				{
 				  "version":"1.0",
 				  "samples":[
-					{"message":"Gastei 40 no posto","expected":{"intent":1,"amount":40,"currency":1,"category":2,"description":"posto","occurredAt":"today","needs_clarification":false,"confidence":0.9,"missing_fields":null}}
+					{"message":"Preciso ver meus gastos","expected":{"intent":2,"amount":0,"currency":1,"category":0,"description":"","occurredAt":"","needs_clarification":false,"confidence":0.9,"missing_fields":null}}
 				  ]
 				}
 				""";
@@ -51,7 +52,7 @@ namespace SecretariaIa.Api.Controllers
 			string reply;
 			const double CONFIDENCE_THRESHOLD = 0.80;
 
-			if (parsed.NeedsClarification || parsed.Confidence < CONFIDENCE_THRESHOLD)
+			if (parsed.NeedsClarification || parsed.Intent == 1 || parsed.Confidence < CONFIDENCE_THRESHOLD)
 			{
 				reply = parsed.MissingFields?.Contains("amount") == true
 					? "Qual foi o valor? (ex: 37,90)"
@@ -61,10 +62,27 @@ namespace SecretariaIa.Api.Controllers
 			{
 				reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
 			}
-			var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), cancellationToken);
-			
-			if (response.Success)
-				await _sender.SendAsync(userPhone, reply);
+			if (parsed.Intent == 1)
+			{
+				var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), cancellationToken);
+
+				if (response.Success)
+					await _sender.SendAsync(userPhone, reply);
+			}
+			else
+			{
+				var response = await _mediator.Send(new GetExpensesByDayQuery(userPhone), cancellationToken);
+				if (response.Any())
+				{
+					reply = "Seus gastos de hoje:\n" + string.Join("\n", response.Select(e => $"- R$ {e.Value:0.00} ({e.Category})"));
+					await _sender.SendAsync(userPhone, reply);
+				}
+				else
+				{
+					reply = "Você não tem gastos registrados para hoje.";
+					await _sender.SendAsync(userPhone, reply);
+				}
+			}
 
 			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
 			return Ok();

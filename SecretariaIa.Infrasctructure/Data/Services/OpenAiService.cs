@@ -38,6 +38,7 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 					Retorne SOMENTE um JSON válido (sem texto extra, sem markdown).
 
 					Formato EXATO:
+					para intent=1 (create_expense):
 					{
 					  "intent": number,
 					  "amount": number|null,
@@ -49,9 +50,16 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 					  "confidence": number,
 					  "missing_fields": string[]|null
 					}
+					para intent=2 (get_summary):
+					{
+					  "intent": number,
+					  "needs_clarification": boolean,
+					  "confidence": number,
+					  "missing_fields": string[]|null
+					}
 
 					Enums:
-					intent: 1=create_expense, 0=unknown
+					intent: 1=create_expense, 2=get_summary
 					currency: 1=BRL
 					category: 1=Alimentacao, 2=Transporte, 3=Moradia, 4=Saude, 5=Lazer, 6=Contas, 7=Compras, 8=Educacao, 9=Outros, 0=Unknown
 
