@@ -24,7 +24,7 @@ namespace SecretariaIa.Api.Controllers
 			_sender = sender;
 			_mediator = mediator;
 		}
-		[HttpPost("whatsapp")]
+		[HttpPost("sms")]
 		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
 		{
 			_logger.LogInformation("Inbound: From={From} Body={Body} sid={Sid}", [inbound.From, inbound.Body, inbound.MessageSid]);
