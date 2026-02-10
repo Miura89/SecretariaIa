@@ -43,11 +43,11 @@ namespace SecretariaIa.Domain.Commands.IdentityUserCommands
 		{
 			CommandResultResponse<Guid> response = new();
 
-			var phone = await _repository.FindAsync(x => x.Phone == request.Phone);
+			var phone = await _repository.FindAsync(x => x.Phone == request.Phone && x.Type == request.TypeUser);
 			if (phone != null)
 				return response.AddNotifications("Telefone já cadastrado");
 
-			var email = await _repository.FindAsync(x => x.Email == request.Email);
+			var email = await _repository.FindAsync(x => x.Email == request.Email && x.Type == request.TypeUser);
 			if (email != null)
 				return response.AddNotifications("E-mail já cadastrado");
 

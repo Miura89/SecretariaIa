@@ -7,6 +7,7 @@ using SecretariaIa.Domain.RequestDTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -42,21 +43,22 @@ namespace SecretariaIa.Domain.Commands.ExpensesCommands
 		public async Task<CommandResultResponse<Guid>> Handle(CreateExpensesCommand request, CancellationToken cancellationToken)
 		{
 			CommandResultResponse<Guid> response = new();
-		
-			var identityUser = await _identityRepository.FindAsync(x => x.Phone == request.Phone);
+
+			request.Phone = request.Phone.Replace("whatsapp:", "");
+			var identityUser = await _identityRepository.FindAsync(x => x.Phone == request.Phone && x.Type == TypeUser.CUSTOMER);
 			if (identityUser == null)
 				return response.AddNotifications("Usuario não encontrado");
 
 			request.CreateBy = identityUser.Id;
 
-			var profile = await _profileRepository.FindAsync(x=>x.IdentityUserId == identityUser.Id);
-			if(profile == null)
+			var profile = await _profileRepository.FindAsync(x => x.IdentityUserId == identityUser.Id);
+			if (profile == null)
 				return response.AddNotifications("Perfil do usuario não encontrado");
 
 			var factory = Factory.ExpenseFactory.Factory(request.Result, identityUser, profile);
 
 			MessageLog messageLog = new("", identityUser.Phone, DateTime.UtcNow, CommandsMessage.CreateExpense, "", request.Result.Confidence, StatusMessage.SENDING, request.Result.NeedsClarification, identityUser, identityUser.Id);
-			
+
 			await _logRepository.CreateAsync(messageLog, identityUser.Id);
 			await _repository.CreateAsync(factory, request.CreateBy);
 			await _repository.UnitOfWork.Commit(cancellationToken);

@@ -1,6 +1,8 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SecretariaIa.Api.Queries.IdentityUserQueries;
 using SecretariaIa.Common.DTOs;
+using SecretariaIa.Common.Exceptions;
 using SecretariaIa.Common.Interfaces;
 using SecretariaIa.Domain.Commands.ExpensesCommands;
 
@@ -30,6 +32,10 @@ namespace SecretariaIa.Api.Controllers
 			_logger.LogInformation("Inbound: From={From} Body={Body} sid={Sid}", [inbound.From, inbound.Body, inbound.MessageSid]);
 
 			var userPhone = inbound.From;
+
+			var valid = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
+			if (!valid)
+				throw new UnauthorizedAccessException();
 
 			var examplesJson = """
 				{

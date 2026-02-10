@@ -29,6 +29,7 @@ namespace SecretariaIa.Infrasctructure.Extensions
 			services.AddScoped<IPasswordHash, PasswordHash>();
 			services.AddScoped<IPlanRepository, PlanRepository>();
 			services.AddScoped<IOpenAiUsageLogRepository, OpenAiUsageLogRepository>();
+			services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 			return services;
 		}
 	}
