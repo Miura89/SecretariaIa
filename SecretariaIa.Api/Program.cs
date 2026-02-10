@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using SecretariaIa.Api.AI.TrainingSamples;
 using SecretariaIa.Infrasctructure.Extensions;
 using System.Reflection;
 
@@ -11,6 +12,7 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddMediator(Assembly.GetExecutingAssembly());
 builder.Services.AddSecurity(builder.Configuration);
 builder.Services.AddSwagger<SwaggerFillter>(builder.Configuration);
+builder.Services.AddScoped<ITrainingSamplesProvider, TrainingSamplesProvider>();
 
 builder.Services.AddCors(options =>
 {

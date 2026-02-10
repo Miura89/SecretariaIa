@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SecretariaIa.Api.AI.TrainingSamples;
 using SecretariaIa.Api.Queries.ExpensesUserQueries;
 using SecretariaIa.Api.Queries.IdentityUserQueries;
 using SecretariaIa.Common.DTOs;
@@ -19,14 +20,16 @@ namespace SecretariaIa.Api.Controllers
 		private readonly ITwilioWhatsAppSender _sender;
 		private readonly ILogger<TwilioWebhookController> _logger;
 		private readonly IMediator _mediator;
+		private readonly ITrainingSamplesProvider _provider;
 
-		public TwilioWebhookController(IOpenAiService openAiService, IWebHostEnvironment env, ILogger<TwilioWebhookController> logger, ITwilioWhatsAppSender sender, IMediator mediator)
+		public TwilioWebhookController(IOpenAiService openAiService, IWebHostEnvironment env, ILogger<TwilioWebhookController> logger, ITwilioWhatsAppSender sender, IMediator mediator, ITrainingSamplesProvider provider)
 		{
 			_openAiService = openAiService;
 			_env = env;
 			_logger = logger;
 			_sender = sender;
 			_mediator = mediator;
+			_provider = provider;
 		}
 		[HttpPost("sms")]
 		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
@@ -39,38 +42,33 @@ namespace SecretariaIa.Api.Controllers
 			if (!valid)
 				throw new UnauthorizedAccessException();
 
-			var examplesJson = """
-				{
-				  "version":"1.0",
-				  "samples":[
-					{"message":"Preciso ver meus gastos","expected":{"intent":2,"amount":0,"currency":1,"category":0,"description":"","occurredAt":"","needs_clarification":false,"confidence":0.9,"missing_fields":null}}
-				  ]
-				}
-				""";
+			var examplesJson = await _provider
+				.GetCreateExpenseSamplesAsync(cancellationToken);
+
 
 			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson);
 
 			string reply;
 			const double CONFIDENCE_THRESHOLD = 0.80;
 
-			if (parsed.NeedsClarification || parsed.Intent == 1 || parsed.Confidence < CONFIDENCE_THRESHOLD)
-			{
-				reply = parsed.MissingFields?.Contains("amount") == true
-					? "Qual foi o valor? (ex: 37,90)"
-					: "Consegue detalhar um pouco mais?";
-			}
-			else
-			{
-				reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
-			}
 			if (parsed.Intent == 1)
 			{
-				var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), cancellationToken);
-
-				if (response.Success)
+				if (parsed.Confidence < CONFIDENCE_THRESHOLD || parsed.NeedsClarification)
+				{
+					reply = parsed.MissingFields?.Contains("amount") == true
+							? "Qual foi o valor? (ex: 37,90)"
+							: "Consegue detalhar um pouco mais?";
 					await _sender.SendAsync(userPhone, reply);
+				}
+				else
+				{
+					reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
+					var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), cancellationToken);
+					if (response.Success)
+						await _sender.SendAsync(userPhone, reply);
+				}
 			}
-			else
+			if (parsed.Intent == 2)
 			{
 				var response = await _mediator.Send(new GetExpensesByDayQuery(userPhone), cancellationToken);
 				if (response.Any())
