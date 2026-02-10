@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SecretariaIa.Infrasctructure.Data.EF;
@@ -11,9 +12,11 @@ using SecretariaIa.Infrasctructure.Data.EF;
 namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260210030338_openAiUsage")]
+    partial class openAiUsage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -198,58 +201,6 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                     b.HasIndex("IdentityUserId");
 
                     b.ToTable("MessagesLog", (string)null);
-                });
-
-            modelBuilder.Entity("SecretariaIa.Domain.Entities.OpenAiUsageLog", b =>
-                {
-                    b.Property<string>("RequestId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int>("CompletionTokens")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("CostUsd")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ExcludedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ExcludedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int>("PromptTokens")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("TotalTokens")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("RequestId");
-
-                    b.ToTable("OpenAiUsageLog", (string)null);
                 });
 
             modelBuilder.Entity("SecretariaIa.Domain.Entities.Plan", b =>

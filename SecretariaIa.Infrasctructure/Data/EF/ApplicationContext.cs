@@ -27,6 +27,8 @@ namespace SecretariaIa.Infrasctructure.Data.EF
 			modelBuilder.ApplyConfiguration<MessageLog>(new MessageLogConfiguration());
 			modelBuilder.ApplyConfiguration<IdentityUser>(new IdentityUserConfiguration());
 			modelBuilder.ApplyConfiguration<Profile>(new ProfileConfiguration());
+			modelBuilder.ApplyConfiguration<Plan>(new PlanConfiguration());
+			modelBuilder.ApplyConfiguration<OpenAiUsageLog>(new OpenAiUsageConfiguration());
 			modelBuilder.Ignore<Notification>();
 		}
 	}

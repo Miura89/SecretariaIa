@@ -36,6 +36,7 @@ namespace SecretariaIa.Domain.Entities
 		public Profile? Profile { get; set; }
 		public ICollection<MessageLog>? MessageLogs { get; set; }
 		public ICollection<Expenses>? Expenses { get; set; }
+		public Plan? Plan { get; set; }
 		public IdentityUser SetName(string name)
 		{
 			Name = name;
