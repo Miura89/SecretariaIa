@@ -143,22 +143,35 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 		public async Task<AiParsedResult> ParseAudio(
 			Stream audio,
 			string examplesJson,
-			Plan? plan)
+			Plan? plan,
+			string mimeType = "audio/ogg") // default para Twilio
 		{
-			var text = await TranscribeAudio(audio);
+			// Transcreve o áudio
+			var text = await TranscribeAudio(audio, mimeType);
 
+			// Envia o texto para o parser de mensagens
 			return await ParseMessage(text, examplesJson, plan);
 		}
 
-
-		public async Task<string> TranscribeAudio(Stream audioStream)
+		public async Task<string> TranscribeAudio(Stream audioStream, string mimeType)
 		{
 			_http.DefaultRequestHeaders.Authorization =
-				   new AuthenticationHeaderValue("Bearer", _apiKey);
+				new AuthenticationHeaderValue("Bearer", _apiKey);
 
 			using var content = new MultipartFormDataContent();
 
-			content.Add(new StreamContent(audioStream), "file", "audio.wav");
+			// Copia o stream para MemoryStream (garante que possa ser lido múltiplas vezes)
+			using var ms = new MemoryStream();
+			await audioStream.CopyToAsync(ms);
+			ms.Position = 0;
+
+			var fileContent = new StreamContent(ms);
+			fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
+
+			// Escolhe nome do arquivo baseado no tipo real
+			var fileName = mimeType.EndsWith("ogg") ? "audio.ogg" : "audio.wav";
+			content.Add(fileContent, "file", fileName);
+
 			content.Add(new StringContent("gpt-4o-mini-transcribe"), "model");
 			content.Add(new StringContent("pt"), "language");
 
@@ -174,5 +187,6 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 			using var doc = JsonDocument.Parse(raw);
 			return doc.RootElement.GetProperty("text").GetString()!;
 		}
+
 	}
 }
