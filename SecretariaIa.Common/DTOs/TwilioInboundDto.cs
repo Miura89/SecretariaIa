@@ -11,8 +11,8 @@ namespace SecretariaIa.Common.DTOs
 		string To,
 		string Body,
 		string MessageSid,
-		string? MediaUrl0 = null,          // URL do áudio ou mídia
-		string? MediaContentType0 = null   // tipo do arquivo, ex: audio/ogg
+		string? MediaUrl0 = null,
+		string? MediaContentType0 = null  
 	);
 
 }

@@ -55,22 +55,30 @@ namespace SecretariaIa.Api.Controllers
 		[HttpPost("voice")]
 		public async Task<IActionResult> ReceiveVoice([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
 		{
+			if (string.IsNullOrEmpty(inbound.MediaUrl0))
+				return BadRequest("Nenhum áudio recebido.");
+
 			var userPhone = inbound.From;
 
 			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
 			if (plan is null)
-				throw new UnauthorizedAccessException();
-
-			var audioUrl = inbound.MediaUrl0;
+				return Unauthorized();
 			using var httpClient = new HttpClient();
-			using var audioStream = await httpClient.GetStreamAsync(audioUrl);
 
-			var examplesJson = await _provider.GetCreateExpenseSamplesAsync(cancellationToken);
-
-			var parsed = await _openAiService.ParseAudio(audioStream, examplesJson, plan);
-
-			return await HandleParsed(parsed, userPhone, cancellationToken);
+			try
+			{
+				using var audioStream = await httpClient.GetStreamAsync(inbound.MediaUrl0);
+				var examplesJson = await _provider.GetCreateExpenseSamplesAsync(cancellationToken);
+				var parsed = await _openAiService.ParseAudio(audioStream, examplesJson, plan);
+				return await HandleParsed(parsed, userPhone, cancellationToken);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Erro ao processar áudio do usuário {Phone}", userPhone);
+				return StatusCode(500, "Erro ao processar áudio");
+			}
 		}
+
 
 
 		private async Task<IActionResult> HandleParsed(AiParsedResult parsed, string userPhone, CancellationToken ct)
