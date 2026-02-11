@@ -96,7 +96,7 @@ namespace SecretariaIa.Api.Controllers
 				_logger.LogInformation("Exemplos de treinamento carregados. Tamanho JSON: {Length}", examplesJson.Length);
 
 				var parsed = await _openAiService.ParseAudio(ms, examplesJson, plan);
-				_logger.LogInformation("Áudio transcrito com sucesso. Transcrição: {Text}", parsed?.Text ?? "NULL");
+				_logger.LogInformation("Áudio transcrito com sucesso. Transcrição: ");
 
 				var result = await HandleParsed(parsed, userPhone, cancellationToken);
 				_logger.LogInformation("HandleParsed finalizado com sucesso para usuário {Phone}", userPhone);
