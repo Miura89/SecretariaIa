@@ -50,7 +50,7 @@ namespace SecretariaIa.Api.Controllers
 			var examplesJson = await _provider
 				.GetCreateExpenseSamplesAsync(cancellationToken);
 
-			if(string.IsNullOrEmpty(inbound.MediaUrl0))
+			if(!string.IsNullOrEmpty(inbound.MediaUrl0))
 			{
 				_logger.LogInformation("Processando áudio...");
 				using var httpClient = new HttpClient();
