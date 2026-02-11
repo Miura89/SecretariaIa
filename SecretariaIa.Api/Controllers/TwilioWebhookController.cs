@@ -50,54 +50,27 @@ namespace SecretariaIa.Api.Controllers
 			var examplesJson = await _provider
 				.GetCreateExpenseSamplesAsync(cancellationToken);
 
-
-			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson, plan);
-
-			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
-			return await HandleParsed(parsed, userPhone, cancellationToken);
-		}
-		[HttpPost("voice")]
-		public async Task<IActionResult> ReceiveVoice([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
-		{
-			var userPhone = inbound.From;
-			_logger.LogInformation("ReceiveVoice iniciado. From={From}, MediaUrl0={MediaUrl0}", userPhone, inbound.MediaUrl0);
-
-			if (string.IsNullOrEmpty(inbound.MediaUrl0))
-				return BadRequest("Nenhum áudio recebido.");
-
-			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
-			if (plan is null)
-				return Unauthorized();
-
-			_logger.LogInformation("Plano do usuário {Phone} verificado com sucesso. Modelo: {Model}", userPhone, plan.DefaultMode);
-
-			try
+			if(string.IsNullOrEmpty(inbound.MediaUrl0))
 			{
+				_logger.LogInformation("Processando áudio...");
 				using var httpClient = new HttpClient();
-
-				// Autenticação Twilio
 				var byteArray = Encoding.ASCII.GetBytes($"{_twilioSid}:{_twilioAuthToken}");
 				httpClient.DefaultRequestHeaders.Authorization =
 					new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-				_logger.LogInformation("Iniciando download do áudio...");
 				using var audioStream = await httpClient.GetStreamAsync(inbound.MediaUrl0);
-				_logger.LogInformation("Áudio baixado com sucesso.");
-
-				// Copiar para MemoryStream
 				using var ms = new MemoryStream();
-				await audioStream.CopyToAsync(ms, cancellationToken);
+				await audioStream.CopyToAsync(ms);
 				ms.Position = 0;
 
-				var examplesJson = await _provider.GetCreateExpenseSamplesAsync(cancellationToken);
-				var parsed = await _openAiService.ParseAudio(ms, examplesJson, plan);
-
-				return await HandleParsed(parsed, userPhone, cancellationToken);
+				var parsed = await _openAiService.ParseAudio(ms, examplesJson, plan, inbound.MediaContentType0!);
+				return await HandleParsed(parsed, inbound.From, cancellationToken);
 			}
-			catch (Exception ex)
+			else
 			{
-				_logger.LogError(ex, "Erro ao processar áudio do usuário {Phone}", userPhone);
-				return StatusCode(500, "Erro ao processar áudio");
+				_logger.LogInformation("Processando texto...");
+				var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson, plan);
+				return await HandleParsed(parsed, inbound.From, cancellationToken);
 			}
 		}
 		private async Task<IActionResult> HandleParsed(AiParsedResult parsed, string userPhone, CancellationToken ct)
