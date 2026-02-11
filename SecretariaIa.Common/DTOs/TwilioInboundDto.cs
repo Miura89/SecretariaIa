@@ -9,10 +9,10 @@ namespace SecretariaIa.Common.DTOs
 	public record TwilioInboundDto(
 		string From,
 		string To,
-		string Body,
 		string MessageSid,
+		string? Body = "",
 		string? MediaUrl0 = null,
-		string? MediaContentType0 = null  
+		string? MediaContentType0 = null
 	);
 
 }
