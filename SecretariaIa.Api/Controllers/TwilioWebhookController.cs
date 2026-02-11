@@ -65,7 +65,18 @@ namespace SecretariaIa.Api.Controllers
 				return Unauthorized();
 			using var httpClient = new HttpClient();
 
-			return Ok();
+			try
+			{
+				using var audioStream = await httpClient.GetStreamAsync(inbound.MediaUrl0);
+				var examplesJson = await _provider.GetCreateExpenseSamplesAsync(cancellationToken);
+				var parsed = await _openAiService.ParseAudio(audioStream, examplesJson, plan);
+				return await HandleParsed(parsed, userPhone, cancellationToken);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Erro ao processar áudio do usuário {Phone}", userPhone);
+				return StatusCode(500, "Erro ao processar áudio");
+			}
 		}
 
 
