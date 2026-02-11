@@ -10,6 +10,7 @@ using SecretariaIa.Common.Util;
 using SecretariaIa.Domain.Commands.ExpensesCommands;
 using SecretariaIa.Domain.RequestDTO;
 using System.Text;
+using Twilio.TwiML.Voice;
 
 namespace SecretariaIa.Api.Controllers
 {
@@ -40,17 +41,21 @@ namespace SecretariaIa.Api.Controllers
 		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
 		{
 			_logger.LogInformation("Inbound: From={From} Body={Body} sid={Sid}", [inbound.From, inbound.Body, inbound.MessageSid]);
-
+			string reply;
 			var userPhone = inbound.From;
 
 			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
 			if (plan is null)
-				throw new UnauthorizedAccessException();
+			{
+				reply = "⚠️ Seu plano atual expirou!\r\nPara continuar usando todos os recursos, clique no link abaixo e renove seu plano:\r\n Renovar Plano\r\n\r\nAssim você não perde o histórico e continua aproveitando todos os benefícios.";
+				await _sender.SendAsync(userPhone, reply);
+				return Unauthorized();
+			}
 
 			var examplesJson = await _provider
 				.GetCreateExpenseSamplesAsync(cancellationToken);
 
-			if(!string.IsNullOrEmpty(inbound.MediaUrl0))
+			if (!string.IsNullOrEmpty(inbound.MediaUrl0))
 			{
 				_logger.LogInformation("Processando áudio...");
 				using var httpClient = new HttpClient();
@@ -116,8 +121,5 @@ namespace SecretariaIa.Api.Controllers
 			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
 			return Ok();
 		}
-
-
-
 	}
 }
