@@ -82,8 +82,9 @@ namespace SecretariaIa.Api.Controllers
 
 				_logger.LogInformation("Iniciando download do áudio...");
 				using var audioStream = await httpClient.GetStreamAsync(inbound.MediaUrl0);
-				_logger.LogInformation("Áudio baixado com sucesso. Tamanho do Stream: {Length}", audioStream.Length);
+				_logger.LogInformation("Áudio baixado com sucesso.");
 
+				// Copiar para MemoryStream
 				using var ms = new MemoryStream();
 				await audioStream.CopyToAsync(ms, cancellationToken);
 				ms.Position = 0;
