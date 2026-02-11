@@ -9,6 +9,7 @@ using SecretariaIa.Common.Interfaces;
 using SecretariaIa.Common.Util;
 using SecretariaIa.Domain.Commands.ExpensesCommands;
 using SecretariaIa.Domain.RequestDTO;
+using System.Text;
 
 namespace SecretariaIa.Api.Controllers
 {
@@ -22,8 +23,9 @@ namespace SecretariaIa.Api.Controllers
 		private readonly ILogger<TwilioWebhookController> _logger;
 		private readonly IMediator _mediator;
 		private readonly ITrainingSamplesProvider _provider;
-
-		public TwilioWebhookController(IOpenAiService openAiService, IWebHostEnvironment env, ILogger<TwilioWebhookController> logger, ITwilioWhatsAppSender sender, IMediator mediator, ITrainingSamplesProvider provider)
+		private readonly string _twilioSid;
+		private readonly string _twilioAuthToken;
+		public TwilioWebhookController(IOpenAiService openAiService, IWebHostEnvironment env, ILogger<TwilioWebhookController> logger, ITwilioWhatsAppSender sender, IMediator mediator, ITrainingSamplesProvider provider, IConfiguration config)
 		{
 			_openAiService = openAiService;
 			_env = env;
@@ -31,6 +33,8 @@ namespace SecretariaIa.Api.Controllers
 			_sender = sender;
 			_mediator = mediator;
 			_provider = provider;
+			_twilioSid = config["Twilio:AccountSid"]!;
+			_twilioAuthToken = config["Twilio:AuthToken"]!;
 		}
 		[HttpPost("sms")]
 		public async Task<IActionResult> Receive([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
@@ -59,49 +63,35 @@ namespace SecretariaIa.Api.Controllers
 			_logger.LogInformation("ReceiveVoice iniciado. From={From}, MediaUrl0={MediaUrl0}", userPhone, inbound.MediaUrl0);
 
 			if (string.IsNullOrEmpty(inbound.MediaUrl0))
-			{
-				_logger.LogWarning("Nenhum áudio recebido do usuário {Phone}", userPhone);
 				return BadRequest("Nenhum áudio recebido.");
-			}
 
 			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
 			if (plan is null)
-			{
-				_logger.LogWarning("Plano não encontrado para o usuário {Phone}", userPhone);
 				return Unauthorized();
-			}
 
 			_logger.LogInformation("Plano do usuário {Phone} verificado com sucesso. Modelo: {Model}", userPhone, plan.DefaultMode);
 
 			try
 			{
-				_logger.LogInformation("Iniciando download do áudio: {Url}", inbound.MediaUrl0);
 				using var httpClient = new HttpClient();
 
-				// Se a URL do Twilio exigir autenticação, adicionar:
-				// var byteArray = Encoding.ASCII.GetBytes($"{_twilioSid}:{_twilioAuthToken}");
-				// httpClient.DefaultRequestHeaders.Authorization =
-				//     new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+				// Autenticação Twilio
+				var byteArray = Encoding.ASCII.GetBytes($"{_twilioSid}:{_twilioAuthToken}");
+				httpClient.DefaultRequestHeaders.Authorization =
+					new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
+				_logger.LogInformation("Iniciando download do áudio...");
 				using var audioStream = await httpClient.GetStreamAsync(inbound.MediaUrl0);
-				_logger.LogInformation("Áudio baixado com sucesso do usuário {Phone}. Stream length: {Length}", userPhone, audioStream.Length);
+				_logger.LogInformation("Áudio baixado com sucesso. Tamanho do Stream: {Length}", audioStream.Length);
 
-				// Copiar para MemoryStream para garantir que o stream esteja no início
 				using var ms = new MemoryStream();
 				await audioStream.CopyToAsync(ms, cancellationToken);
 				ms.Position = 0;
-				_logger.LogInformation("Stream copiado para MemoryStream. Tamanho: {Length}", ms.Length);
 
 				var examplesJson = await _provider.GetCreateExpenseSamplesAsync(cancellationToken);
-				_logger.LogInformation("Exemplos de treinamento carregados. Tamanho JSON: {Length}", examplesJson.Length);
-
 				var parsed = await _openAiService.ParseAudio(ms, examplesJson, plan);
-				_logger.LogInformation("Áudio transcrito com sucesso. Transcrição: ");
 
-				var result = await HandleParsed(parsed, userPhone, cancellationToken);
-				_logger.LogInformation("HandleParsed finalizado com sucesso para usuário {Phone}", userPhone);
-
-				return result;
+				return await HandleParsed(parsed, userPhone, cancellationToken);
 			}
 			catch (Exception ex)
 			{
@@ -109,10 +99,6 @@ namespace SecretariaIa.Api.Controllers
 				return StatusCode(500, "Erro ao processar áudio");
 			}
 		}
-
-
-
-
 		private async Task<IActionResult> HandleParsed(AiParsedResult parsed, string userPhone, CancellationToken ct)
 		{
 			string reply;
