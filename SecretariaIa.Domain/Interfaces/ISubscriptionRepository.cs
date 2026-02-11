@@ -9,6 +9,6 @@ namespace SecretariaIa.Domain.Interfaces
 {
 	public interface ISubscriptionRepository : IRepositoryRead<Guid, Subscription>, IRepositoryWrite<Guid, Subscription>
 	{
-		Task<IdentityUser?> VerifySubscription(string phone);
+		Task<Subscription?> VerifySubscription(string phone);
 	}
 }

@@ -17,7 +17,7 @@ namespace SecretariaIa.Infrasctructure.Data.Repositories
 		{
 		}
 
-		public async Task<IdentityUser?> VerifySubscription(string phone)
+		public async Task<Subscription?> VerifySubscription(string phone)
 		{
 			phone = phone.Replace("whatsapp:", "");
 
@@ -40,7 +40,7 @@ namespace SecretariaIa.Infrasctructure.Data.Repositories
 				.OrderByDescending(s => s.StartDate)
 				.FirstOrDefaultAsync();
 
-			return subscription is not null ? identity : null;
+			return subscription;
 		}
 
 	}

@@ -1,4 +1,5 @@
 ﻿using SecretariaIa.Common.DTOs;
+using SecretariaIa.Domain.Entities;
 using SecretariaIa.Domain.RequestDTO;
 using System;
 using System.Collections.Generic;
@@ -10,6 +11,8 @@ namespace SecretariaIa.Common.Interfaces
 {
 	public interface IOpenAiService
 	{
-		Task<AiParsedResult> ParseMessage(string message, string examplesJson);
+		Task<AiParsedResult> ParseMessage(string message, string examplesJson, Plan? plan);
+		Task<string> TranscribeAudio(Stream audioStream);
+		Task<AiParsedResult> ParseAudio(Stream audio, string examplesJson,Plan? plan);
 	}
 }

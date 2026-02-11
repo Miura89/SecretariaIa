@@ -8,6 +8,7 @@ using SecretariaIa.Common.Exceptions;
 using SecretariaIa.Common.Interfaces;
 using SecretariaIa.Common.Util;
 using SecretariaIa.Domain.Commands.ExpensesCommands;
+using SecretariaIa.Domain.RequestDTO;
 
 namespace SecretariaIa.Api.Controllers
 {
@@ -38,16 +39,42 @@ namespace SecretariaIa.Api.Controllers
 
 			var userPhone = inbound.From;
 
-			var valid = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
-			if (!valid)
+			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
+			if (plan is null)
 				throw new UnauthorizedAccessException();
 
 			var examplesJson = await _provider
 				.GetCreateExpenseSamplesAsync(cancellationToken);
 
 
-			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson);
+			var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson, plan);
 
+			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
+			return await HandleParsed(parsed, userPhone, cancellationToken);
+		}
+		[HttpPost("voice")]
+		public async Task<IActionResult> ReceiveVoice([FromForm] TwilioInboundDto inbound, CancellationToken cancellationToken)
+		{
+			var userPhone = inbound.From;
+
+			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
+			if (plan is null)
+				throw new UnauthorizedAccessException();
+
+			var audioUrl = inbound.MediaUrl0;
+			using var httpClient = new HttpClient();
+			using var audioStream = await httpClient.GetStreamAsync(audioUrl);
+
+			var examplesJson = await _provider.GetCreateExpenseSamplesAsync(cancellationToken);
+
+			var parsed = await _openAiService.ParseAudio(audioStream, examplesJson, plan);
+
+			return await HandleParsed(parsed, userPhone, cancellationToken);
+		}
+
+
+		private async Task<IActionResult> HandleParsed(AiParsedResult parsed, string userPhone, CancellationToken ct)
+		{
 			string reply;
 			const double CONFIDENCE_THRESHOLD = 0.80;
 
@@ -62,23 +89,26 @@ namespace SecretariaIa.Api.Controllers
 				}
 				else
 				{
-					reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {parsed.Category}).";
-					var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), cancellationToken);
+					reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {CategoryFormatter.Format(parsed.Category)}).";
+					var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), ct);
 					if (response.Success)
 						await _sender.SendAsync(userPhone, reply);
 				}
 			}
+
 			if (parsed.Intent == 2)
 			{
-				var response = await _mediator.Send(new GetExpensesByDayQuery(userPhone), cancellationToken);
+				var response = await _mediator.Send(new GetExpensesByDayQuery(userPhone), ct);
+
 				if (response.Any())
 				{
-					reply = "Seus gastos de hoje:\n" + string.Join("\n", response.Select(e => $"- R$ {e.Value:0.00} ({CategoryFormatter.Format(e.Category)}) - {e.Description} - {DateFormatter.FormatDateTimeHuman(e.Date)}"));
+					reply = "Seus gastos:\n" +
+						string.Join("\n", response.Select(e => $"- R$ {e.Value:0.00} ({CategoryFormatter.Format(e.Category)}) - {e.Description} - {DateFormatter.FormatDateTimeHuman(e.Date)}"));
 					await _sender.SendAsync(userPhone, reply);
 				}
 				else
 				{
-					reply = "Você não tem gastos registrados para hoje.";
+					reply = "Você não tem gastos registrados nesse período.";
 					await _sender.SendAsync(userPhone, reply);
 				}
 			}
@@ -86,5 +116,8 @@ namespace SecretariaIa.Api.Controllers
 			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
 			return Ok();
 		}
+
+
+
 	}
 }

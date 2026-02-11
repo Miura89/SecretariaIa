@@ -2,6 +2,7 @@
 using SecretariaIa.Common.DTOs;
 using SecretariaIa.Common.Interfaces;
 using SecretariaIa.Domain.Entities;
+using SecretariaIa.Domain.Enums;
 using SecretariaIa.Domain.Interfaces;
 using SecretariaIa.Domain.RequestDTO;
 using System;
@@ -28,60 +29,60 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 			_repository = repository;
 		}
 
-		public async Task<AiParsedResult> ParseMessage(string message, string examplesJson)
+		public async Task<AiParsedResult> ParseMessage(string message, string examplesJson, Plan? plan)
 		{
 			_http.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", _apiKey);
 
 			var schema = """
-					Você é um extrator de gastos.
-					Retorne SOMENTE um JSON válido (sem texto extra, sem markdown).
+					Extraia um JSON válido, sem texto extra.
 
-					Formato EXATO:
-					para intent=1 (create_expense):
-					{
-					  "intent": number,
-					  "amount": number|null,
-					  "currency": number,
-					  "category": number,
-					  "description": string|null,
-					  "occurredAt": "today"|"yesterday"|null,
-					  "needs_clarification": boolean,
-					  "confidence": number,
-					  "missing_fields": string[]|null
-					}
-					para intent=2 (get_summary):
-					{
-					  "intent": number,
-					  "needs_clarification": boolean,
-					  "confidence": number,
-					  "missing_fields": string[]|null
-					}
-
-					Enums:
 					intent: 1=create_expense, 2=get_summary
-					currency: 1=BRL
-					category: 1=Alimentacao, 2=Transporte, 3=Moradia, 4=Saude, 5=Lazer, 6=Contas, 7=Compras, 8=Educacao, 9=Outros, 0=Unknown
+					currency: sempre 1 (BRL)
+					category: 1=Alimentacao,2=Transporte,3=Moradia,4=Saude,5=Lazer,6=Contas,7=Compras,8=Educacao,9=Outros,0=Unknown
+
+					create_expense:
+					{
+					 intent:number,
+					 amount:number|null,
+					 currency:1,
+					 category:number,
+					 description:string|null,
+					 occurredAt:"today"|"yesterday"|null,
+					 needs_clarification:boolean,
+					 confidence:number,
+					 missing_fields:string[]|null
+					}
+
+					get_summary:
+					{
+					 intent:number,
+					 needs_clarification:boolean,
+					 confidence:number,
+					 missing_fields:string[]|null
+					}
 
 					Regras:
-					- Se houver valor no texto, amount NÃO pode ser null.
-					- Sempre currency=1.
-					- Se não houver data, occurredAt="today".
-					- Se faltar amount => needs_clarification=true e missing_fields inclui "amount".
-					- Se faltar description => needs_clarification=true e missing_fields inclui "description".
+					- valor no texto => amount obrigatório
+					- sem data => occurredAt="today"
+					- se faltar amount ou description => needs_clarification=true
 					""";
+
+			var model = ResolveModel(plan?.DefaultMode ?? OpenAiModel.Gpt4oMini);
+
+			var messages = new List<object>
+			{
+				new { role = "system", content = schema },
+				new { role = "user", content = message }
+			};
+
 
 			var payload = new
 			{
-				model = "gpt-4.1-mini",
+				model,
 				response_format = new { type = "json_object" },
-				messages = new object[]
-				{
-				new { role = "system", content = schema },
-				new { role = "system", content = "Exemplos (imite o expected):\n" + examplesJson },
-				new { role = "user", content = message }
-				},
-				temperature = 0.1
+				messages,
+				temperature = 0.0
 			};
 
 			var response = await _http.PostAsJsonAsync(
@@ -98,6 +99,8 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 				.GetProperty("message")
 				.GetProperty("content")
 				.GetString();
+
+			var result = JsonSerializer.Deserialize<AiParsedResult>(content);
 
 			var usageElement = doc.RootElement.GetProperty("usage");
 			int promptTokens = usageElement.GetProperty("prompt_tokens").GetInt32();
@@ -127,6 +130,49 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 				new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
 			)!;
 		}
+		private static string ResolveModel(OpenAiModel? model)
+		{
+			return model switch
+			{
+				OpenAiModel.Gpt4oMini => "gpt-4o-mini",
+				OpenAiModel.Gpt41 => "gpt-4.1",
+				_ => "gpt-4o-mini"
+			};
+		}
 
+		public async Task<AiParsedResult> ParseAudio(
+			Stream audio,
+			string examplesJson,
+			Plan? plan)
+		{
+			var text = await TranscribeAudio(audio);
+
+			return await ParseMessage(text, examplesJson, plan);
+		}
+
+
+		public async Task<string> TranscribeAudio(Stream audioStream)
+		{
+			_http.DefaultRequestHeaders.Authorization =
+				   new AuthenticationHeaderValue("Bearer", _apiKey);
+
+			using var content = new MultipartFormDataContent();
+
+			content.Add(new StreamContent(audioStream), "file", "audio.wav");
+			content.Add(new StringContent("gpt-4o-mini-transcribe"), "model");
+			content.Add(new StringContent("pt"), "language");
+
+			var response = await _http.PostAsync(
+				"https://api.openai.com/v1/audio/transcriptions",
+				content
+			);
+
+			response.EnsureSuccessStatusCode();
+
+			var raw = await response.Content.ReadAsStringAsync();
+
+			using var doc = JsonDocument.Parse(raw);
+			return doc.RootElement.GetProperty("text").GetString()!;
+		}
 	}
 }

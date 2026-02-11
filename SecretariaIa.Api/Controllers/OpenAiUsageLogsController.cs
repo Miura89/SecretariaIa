@@ -24,8 +24,7 @@ namespace SecretariaIa.Api.Controllers
 			return Ok(response);
 		}
 		[HttpGet("{id}")]
-		public async Task<IActionResult> GetById([FromRoute
-			] string id, CancellationToken cancellationToken)
+		public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
 		{
 			CheckOperatorRequirement();
 			var response = await _mediator.Send(new GetOpenAiUsageLogByIdQuery(id), cancellationToken);
