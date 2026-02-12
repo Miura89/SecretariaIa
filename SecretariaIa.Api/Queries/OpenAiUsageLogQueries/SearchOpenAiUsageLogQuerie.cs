@@ -27,8 +27,8 @@ namespace SecretariaIa.Api.Queries.OpenAiUsageLogQueries
 
 			var parts = new SqlParts
 			{
-				Select = "log.[Id], log.[RequestId], log.[Model], log.[PromptTokens], log.[CompletionTokens], log.[TotalTokens], log.[CostUsd], log.[Timestamp]",
-				FromWhere = "FROM [OpenAiUsageLog] log",
+				Select = "log.[Id], log.[RequestId], log.[Model], log.[PromptTokens], log.[CompletionTokens], log.[TotalTokens], log.[CostUsd], log.[Timestamp], log.[DurationMs], p.[PlanName], log.[Success], log.[InputType], log.[OperationType]",
+				FromWhere = "FROM [OpenAiUsageLogs] log INNER JOIN [Plan] p ON p.[Id] = log.[PlanId]",
 				OrderBy = "log.[Timestamp] DESC"
 			};
 			var pgParts = SqlNormalizer.PostgreSQLQuery(parts);

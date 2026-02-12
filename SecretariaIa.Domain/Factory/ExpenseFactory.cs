@@ -11,7 +11,7 @@ namespace SecretariaIa.Domain.Factory
 {
 	public static class ExpenseFactory
 	{
-		public static Expenses Factory(AiParsedResult request, IdentityUser identityUser, Profile profile)
+		public static Expenses Factory(CreateExpenseResult request, IdentityUser identityUser, Profile profile)
 		{
 			Category category;
 			switch (request.Category)

@@ -7,9 +7,11 @@ using SecretariaIa.Common.DTOs;
 using SecretariaIa.Common.Exceptions;
 using SecretariaIa.Common.Interfaces;
 using SecretariaIa.Common.Util;
+using SecretariaIa.Domain.Commands.AppointmentCommands;
 using SecretariaIa.Domain.Commands.ExpensesCommands;
 using SecretariaIa.Domain.RequestDTO;
 using System.Text;
+using System.Text.Json;
 using Twilio.TwiML.Voice;
 
 namespace SecretariaIa.Api.Controllers
@@ -44,8 +46,8 @@ namespace SecretariaIa.Api.Controllers
 			string reply;
 			var userPhone = inbound.From;
 
-			var plan = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
-			if (plan is null)
+			var access = await _mediator.Send(new VerifySubscriptionByIdentityNumber(userPhone), cancellationToken);
+			if (access is null)
 			{
 				reply = "⚠️ Seu plano atual expirou!\r\nPara continuar usando todos os recursos, clique no link abaixo e renove seu plano:\r\n Renovar Plano\r\n\r\nAssim você não perde o histórico e continua aproveitando todos os benefícios.";
 				await _sender.SendAsync(userPhone, reply);
@@ -68,14 +70,20 @@ namespace SecretariaIa.Api.Controllers
 				await audioStream.CopyToAsync(ms);
 				ms.Position = 0;
 
-				var parsed = await _openAiService.ParseAudio(ms, examplesJson, plan, inbound.MediaContentType0!);
+				var parsed = await _openAiService.ParseAudio(ms, examplesJson, access.Plan, access.Subscription, access.IdentityUser, inbound.MediaContentType0!);
+				return await HandleParsed(parsed, inbound.From, cancellationToken);
+			}
+			else if (!string.IsNullOrEmpty(inbound.Body))
+			{
+				_logger.LogInformation("Processando texto...");
+				var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson, access.Plan, access.Subscription, access.IdentityUser);
 				return await HandleParsed(parsed, inbound.From, cancellationToken);
 			}
 			else
 			{
-				_logger.LogInformation("Processando texto...");
-				var parsed = await _openAiService.ParseMessage(inbound.Body, examplesJson, plan);
-				return await HandleParsed(parsed, inbound.From, cancellationToken);
+				reply = "⚠️ Não consegui entender sua mensagem. Por favor, envie um texto descrevendo seu gasto ou um áudio com a descrição e valor.";
+				await _sender.SendAsync(userPhone, reply);
+				return await HandleParsed(new AiParsedResult { Intent = 0 }, inbound.From, cancellationToken);
 			}
 		}
 		private async Task<IActionResult> HandleParsed(AiParsedResult parsed, string userPhone, CancellationToken ct)
@@ -85,6 +93,11 @@ namespace SecretariaIa.Api.Controllers
 
 			if (parsed.Intent == 1)
 			{
+				var expense = parsed.GetPayload<CreateExpenseResult>();
+
+				if (expense is null)
+					return Ok();
+
 				if (parsed.Confidence < CONFIDENCE_THRESHOLD || parsed.NeedsClarification)
 				{
 					reply = parsed.MissingFields?.Contains("amount") == true
@@ -94,10 +107,12 @@ namespace SecretariaIa.Api.Controllers
 				}
 				else
 				{
-					reply = $"Anotei ✅ R$ {parsed.Amount:0.00} (cat {CategoryFormatter.Format(parsed.Category)}).";
-					var response = await _mediator.Send(new CreateExpensesCommand(parsed, userPhone), ct);
+					var response = await _mediator.Send(new CreateExpensesCommand(expense, parsed, userPhone), ct);
 					if (response.Success)
+					{
+						reply = $"Anotei ✅ R$ {expense.Amount:0.00} (cat {CategoryFormatter.Format(expense.Category)}).";
 						await _sender.SendAsync(userPhone, reply);
+					}
 				}
 			}
 
@@ -117,8 +132,25 @@ namespace SecretariaIa.Api.Controllers
 					await _sender.SendAsync(userPhone, reply);
 				}
 			}
+			if (parsed.Intent == 3)
+			{
+				var appointment = parsed.GetPayload<CreateAppointmentResult>();
 
-			_logger.LogInformation("Amount: {}, category: {}", parsed.Amount, parsed.Category);
+				if (appointment is null)
+					return Ok();
+				if (parsed.Confidence < CONFIDENCE_THRESHOLD || parsed.NeedsClarification)
+				{
+					await _sender.SendAsync(userPhone, "Qual o horário do compromisso?");
+				}
+				else
+				{
+					var response = await _mediator.Send(new CreateAppointmentCommand(userPhone, appointment.Title, appointment.ScheduledAt, appointment.RemindBeforeMinutes, Guid.NewGuid()));
+					if (!response.Success)
+						await _sender.SendAsync(userPhone, "Houve um erro ao criar o compromisso. Tente novamente mais tarde.");
+					else
+						await _sender.SendAsync(userPhone, $"Compromisso '{appointment.Title}' agendado para {DateFormatter.FormatDateTimeHuman(appointment.ScheduledAt)}.");
+				}
+			}
 			return Ok();
 		}
 	}

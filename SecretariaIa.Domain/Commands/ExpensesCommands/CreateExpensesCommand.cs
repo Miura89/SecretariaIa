@@ -16,13 +16,15 @@ namespace SecretariaIa.Domain.Commands.ExpensesCommands
 {
 	public class CreateExpensesCommand : IRequest<CommandResultResponse<Guid>>
 	{
-		public CreateExpensesCommand(AiParsedResult result, string phone)
+		public CreateExpensesCommand(CreateExpenseResult result, AiParsedResult parsed, string phone)
 		{
 			Result = result;
 			Phone = phone;
+			Parsed = parsed;
 		}
 
-		public AiParsedResult Result { get; init; }
+		public CreateExpenseResult Result { get; set; }
+		public AiParsedResult Parsed { get; set; }
 		public string Phone { get; set; }
 		public Guid? CreateBy { get; set; }
 	}
@@ -57,7 +59,7 @@ namespace SecretariaIa.Domain.Commands.ExpensesCommands
 
 			var factory = Factory.ExpenseFactory.Factory(request.Result, identityUser, profile);
 
-			MessageLog messageLog = new("", identityUser.Phone, DateTime.UtcNow, CommandsMessage.CreateExpense, "", request.Result.Confidence, StatusMessage.SENDING, request.Result.NeedsClarification, identityUser, identityUser.Id);
+			MessageLog messageLog = new("", identityUser.Phone, DateTime.UtcNow, CommandsMessage.CreateExpense, "", request.Parsed.Confidence, StatusMessage.SENDING, request.Parsed.NeedsClarification, identityUser, identityUser.Id);
 
 			await _logRepository.CreateAsync(messageLog, identityUser.Id);
 			await _repository.CreateAsync(factory, request.CreateBy);

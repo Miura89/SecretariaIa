@@ -30,6 +30,7 @@ namespace SecretariaIa.Infrasctructure.Extensions
 			services.AddScoped<IPlanRepository, PlanRepository>();
 			services.AddScoped<IOpenAiUsageLogRepository, OpenAiUsageLogRepository>();
 			services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+			services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 			return services;
 		}
 	}

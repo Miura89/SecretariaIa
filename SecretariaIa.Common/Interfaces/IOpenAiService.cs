@@ -11,11 +11,8 @@ namespace SecretariaIa.Common.Interfaces
 {
 	public interface IOpenAiService
 	{
-		Task<AiParsedResult> ParseMessage(string message, string examplesJson, Plan? plan);
+		Task<AiParsedResult> ParseMessage(string message, string examplesJson, Plan plan, Subscription subscription, IdentityUser identity);
 		Task<string> TranscribeAudio(Stream audioStream, string mimeType);
-		Task<AiParsedResult> ParseAudio(Stream audio,
-	string examplesJson,
-	Plan? plan,
-	string mimeType = "audio/ogg");
+		Task<AiParsedResult> ParseAudio(Stream audio, string examplesJson, Plan plan, Subscription subscription, IdentityUser identity, string mimeType = "audio/ogg");
 	}
 }

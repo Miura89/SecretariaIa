@@ -30,6 +30,7 @@ namespace SecretariaIa.Infrasctructure.Data.EF
 			modelBuilder.ApplyConfiguration<Plan>(new PlanConfiguration());
 			modelBuilder.ApplyConfiguration<OpenAiUsageLog>(new OpenAiUsageConfiguration());
 			modelBuilder.ApplyConfiguration<Subscription>(new SubscriptionEntityTypeConfiguration());
+			modelBuilder.ApplyConfiguration<Appointment>(new AppointmentConfiguration());
 			modelBuilder.Ignore<Notification>();
 		}
 	}

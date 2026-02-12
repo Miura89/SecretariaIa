@@ -1,11 +1,12 @@
 ﻿using Dapper;
 using MediatR;
+using SecretariaIa.Api.DTOs;
 using SecretariaIa.Common.DTOs;
 using SecretariaIa.Infrasctructure.Data;
 
 namespace SecretariaIa.Api.Queries.OpenAiUsageLogQueries
 {
-	public class GetOpenAiUsageLogByIdQuery : IRequest<OpenAiUsageDTO>
+	public class GetOpenAiUsageLogByIdQuery : IRequest<OpenAiUsageLogDTO>
 	{
 		public string RequestId { get; set; }
 
@@ -14,7 +15,7 @@ namespace SecretariaIa.Api.Queries.OpenAiUsageLogQueries
 			RequestId = requestId;
 		}
 	}
-	public class GetOpenAiUsageLogByIdQueryHandler : IRequestHandler<GetOpenAiUsageLogByIdQuery, OpenAiUsageDTO>
+	public class GetOpenAiUsageLogByIdQueryHandler : IRequestHandler<GetOpenAiUsageLogByIdQuery, OpenAiUsageLogDTO>
 	{
 		private readonly IConnectionSqlFactory _connectionSqlFactory;
 
@@ -23,7 +24,7 @@ namespace SecretariaIa.Api.Queries.OpenAiUsageLogQueries
 			_connectionSqlFactory = connectionSqlFactory;
 		}
 
-		public async Task<OpenAiUsageDTO> Handle(GetOpenAiUsageLogByIdQuery request, CancellationToken cancellationToken)
+		public async Task<OpenAiUsageLogDTO> Handle(GetOpenAiUsageLogByIdQuery request, CancellationToken cancellationToken)
 		{
 			using var conn = _connectionSqlFactory.CreateConnection();
 			await conn.OpenAsync(cancellationToken);
@@ -36,14 +37,25 @@ namespace SecretariaIa.Api.Queries.OpenAiUsageLogQueries
 									log.[CompletionTokens], 
 									log.[TotalTokens], 
 									log.[CostUsd], 
-									log.[Timestamp]
-									FROM [OpenAiUsageLog] log
+									log.[Timestamp], 
+									log.[DurationMs], 
+									p.[PlanName], 
+									log.[Success], 
+									log.[InputType], 
+									log.[OperationType],
+									log.[PromptVersion],
+									log.[OutputCharacters],
+									log.[InputCharacters],
+									i.[Name] as IdentityName
+									FROM [OpenAiUsageLogs] log
+									INNER JOIN [Plan] p ON p.[Id] = log.[PlanId]
+									INNER JOIN [IdentityUser] i ON i.[Id] = log.[IdentityUserId]
 									WHERE log.[RequestId] = @RequestId";
 			var parameters = new DynamicParameters();
 
 			parameters.Add("RequestId", request.RequestId);
 
-			return await conn.QueryFirstOrDefaultAsync<OpenAiUsageDTO>(SqlNormalizer.PostgreSQLQuery(QUERY), parameters);
+			return await conn.QueryFirstOrDefaultAsync<OpenAiUsageLogDTO>(SqlNormalizer.PostgreSQLQuery(QUERY), parameters);
 		}
 	}
 }

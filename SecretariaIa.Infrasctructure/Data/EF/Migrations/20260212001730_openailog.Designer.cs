@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SecretariaIa.Infrasctructure.Data.EF;
@@ -11,9 +12,11 @@ using SecretariaIa.Infrasctructure.Data.EF;
 namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20260212001730_openailog")]
+    partial class openailog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,55 +24,6 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("SecretariaIa.Domain.Entities.Appointment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ExcludedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ExcludedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("IdentityUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("RemindBeforeMinutes")
-                        .IsRequired()
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("ReminderSent")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("ScheduledAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdentityUserId");
-
-                    b.ToTable("Appointments", (string)null);
-                });
 
             modelBuilder.Entity("SecretariaIa.Domain.Entities.Expenses", b =>
                 {
@@ -341,17 +295,9 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
 
                     b.HasIndex("IdentityUserId");
 
-                    b.HasIndex("OperationType");
-
                     b.HasIndex("PlanId");
 
                     b.HasIndex("SubscriptionId");
-
-                    b.HasIndex("Success");
-
-                    b.HasIndex("Timestamp");
-
-                    b.HasIndex("IdentityUserId", "Timestamp");
 
                     b.ToTable("OpenAiUsageLogs", (string)null);
                 });
@@ -515,17 +461,6 @@ namespace SecretariaIa.Infrasctructure.Data.EF.Migrations
                     b.HasIndex("PlanId");
 
                     b.ToTable("Subscriptions", (string)null);
-                });
-
-            modelBuilder.Entity("SecretariaIa.Domain.Entities.Appointment", b =>
-                {
-                    b.HasOne("SecretariaIa.Domain.Entities.IdentityUser", "IdentityUser")
-                        .WithMany()
-                        .HasForeignKey("IdentityUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("IdentityUser");
                 });
 
             modelBuilder.Entity("SecretariaIa.Domain.Entities.Expenses", b =>

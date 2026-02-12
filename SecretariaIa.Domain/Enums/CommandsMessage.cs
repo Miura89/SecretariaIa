@@ -8,7 +8,7 @@ namespace SecretariaIa.Domain.Enums
 	{
 		CreateExpense = 1,
 		GetSummary = 2,
-		SetBudget = 3,
+		CreateAppointment = 3,
 		UndoLastExpense = 4,
 		Help = 5
 	}

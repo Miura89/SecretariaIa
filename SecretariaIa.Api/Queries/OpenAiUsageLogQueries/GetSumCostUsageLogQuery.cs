@@ -27,7 +27,7 @@ public class GetOpenAiUsageLogSumCostQueryHandler : IRequestHandler<GetOpenAiUsa
 		const string QUERY = @"
             SELECT 
                 COALESCE(SUM(log.""CostUsd""), 0) AS ""SumCostUsd""
-            FROM ""OpenAiUsageLog"" log
+            FROM ""OpenAiUsageLogs"" log
         ";
 
 		var sum = await conn.QueryFirstAsync<OpenAiUsageLogSumCostDTO>(QUERY);

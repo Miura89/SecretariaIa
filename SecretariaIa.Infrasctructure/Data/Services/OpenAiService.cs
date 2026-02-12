@@ -1,18 +1,14 @@
-﻿using Microsoft.Extensions.Configuration;
-using SecretariaIa.Common.DTOs;
+﻿
+using Microsoft.Extensions.Configuration;
 using SecretariaIa.Common.Interfaces;
 using SecretariaIa.Domain.Entities;
 using SecretariaIa.Domain.Enums;
 using SecretariaIa.Domain.Interfaces;
 using SecretariaIa.Domain.RequestDTO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace SecretariaIa.Infrasctructure.Data.Services
 {
@@ -29,44 +25,129 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 			_repository = repository;
 		}
 
-		public async Task<AiParsedResult> ParseMessage(string message, string examplesJson, Plan? plan)
+		public async Task<AiParsedResult> ParseMessage(string message, string examplesJson, Plan plan, Subscription subscription, IdentityUser identity)
 		{
 			_http.DefaultRequestHeaders.Authorization =
 				new AuthenticationHeaderValue("Bearer", _apiKey);
+			var now = DateTime.Now;
 
-			var schema = """
-					Extraia um JSON válido, sem texto extra.
+			var schema = $"""
+						Data atual: {DateTime.Now:yyyy-MM-dd}.
+						Considere essa data como referência absoluta para interpretar datas relativas como:
+						- hoje
+						- amanhã
+						- depois de amanhã
+						- próxima segunda
+						- daqui a X dias
+						Extraia um JSON válido, sem texto extra.
 
-					intent: 1=create_expense, 2=get_summary
-					currency: sempre 1 (BRL)
-					category: 1=Alimentacao,2=Transporte,3=Moradia,4=Saude,5=Lazer,6=Contas,7=Compras,8=Educacao,9=Outros,0=Unknown
+						INTENTS:
+						1 = create_expense
+						2 = get_summary
+						3 = create_appointment
 
-					create_expense:
-					{
-					 intent:number,
-					 amount:number|null,
-					 currency:1,
-					 category:number,
-					 description:string|null,
-					 occurredAt:"today"|"yesterday"|null,
-					 needs_clarification:boolean,
-					 confidence:number,
-					 missing_fields:string[]|null
-					}
+						CURRENCY:
+						currency: sempre 1 (BRL)
 
-					get_summary:
-					{
-					 intent:number,
-					 needs_clarification:boolean,
-					 confidence:number,
-					 missing_fields:string[]|null
-					}
+						CATEGORY (para despesas):
+						1=Alimentacao
+						2=Transporte
+						3=Moradia
+						4=Saude
+						5=Lazer
+						6=Contas
+						7=Compras
+						8=Educacao
+						9=Outros
+						0=Unknown
 
-					Regras:
-					- valor no texto => amount obrigatório
-					- sem data => occurredAt="today"
-					- se faltar amount ou description => needs_clarification=true
-					""";
+						====================================
+						ESTRUTURA OBRIGATÓRIA
+						====================================
+
+						"domain": "finance" | "appointment",
+						  "intent": number,
+						  "needs_clarification": boolean,
+						  "confidence": number,
+						  "missing_fields": string[] | null,
+						  "payload": object | null
+						
+
+						====================================
+						INTENT 1 — create_expense
+						====================================
+
+						
+						  "domain": "finance",
+						  "intent": 1,
+						  "needs_clarification": boolean,
+						  "confidence": number,
+						  "missing_fields": string[] | null,
+						  "payload": 
+							"amount": number | null,
+							"currency": 1,
+							"category": number,
+							"description": string | null,
+							"occurredAt": "today" | "yesterday" | null
+						 
+
+						Regras:
+						- Se houver valor explícito → amount obrigatório
+						- Se não houver data → occurredAt = "today"
+						- Se faltar amount ou description → needs_clarification = true
+						- Se categoria não identificável → category = 0
+
+						====================================
+						INTENT 2 — get_summary
+						====================================
+
+						
+						  "domain": "finance",
+						  "intent": 2,
+						  "needs_clarification": boolean,
+						  "confidence": number,
+						  "missing_fields": string[] | null,
+						  "payload": null
+						
+
+						Regras:
+						- Deve ser usado quando o usuário pedir resumo, extrato ou listar gastos.
+
+						====================================
+						INTENT 3 — create_appointment
+						====================================
+
+						
+						  "domain": "appointment",
+						  "intent": 3,
+						  "needs_clarification": boolean,
+						  "confidence": number,
+						  "missing_fields": string[] | null,
+						  "payload": 
+							"title": string | null,
+							"scheduledAt": string | null,
+							"remindBeforeMinutes": number | null
+						  
+						
+
+						Regras:
+						- scheduledAt deve estar no formato ISO 8601 (YYYY-MM-DDTHH:MM:SS)
+						- Converter expressões como "amanhã às 15:30" para data completa
+						- Se não houver horário definido → needs_clarification = true
+						- Se não houver título claro → inferir do texto
+						- Se houver "me avisa X minutos antes" → preencher remindBeforeMinutes
+						- Se não houver lembrete mencionado → remindBeforeMinutes = null
+
+						====================================
+
+						REGRAS GERAIS:
+						- Retorne apenas JSON válido
+						- Nunca retorne explicações
+						- confidence deve variar entre 0 e 1
+						- Se faltar informação obrigatória → needs_clarification = true
+						""";
+
+
 
 			var model = ResolveModel(plan?.DefaultMode ?? OpenAiModel.Gpt4oMini);
 
@@ -82,14 +163,17 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 				model,
 				response_format = new { type = "json_object" },
 				messages,
-				temperature = 0.0
+				temperature = 0.1
 			};
+			var stopwatch = Stopwatch.StartNew();
 
 			var response = await _http.PostAsJsonAsync(
 				"https://api.openai.com/v1/chat/completions",
 				payload
 			);
 			response.EnsureSuccessStatusCode();
+			stopwatch.Stop();
+			var durationMs = stopwatch.ElapsedMilliseconds;
 
 			var raw = await response.Content.ReadAsStringAsync();
 
@@ -108,16 +192,7 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 
 			decimal cost = (promptTokens / 1000m) * 0.003m + (completionTokens / 1000m) * 0.006m;
 
-			OpenAiUsageLog log = new()
-			{
-				RequestId = doc.RootElement.GetProperty("id").GetString()!,
-				Model = doc.RootElement.GetProperty("model").GetString()!,
-				PromptTokens = promptTokens,
-				CompletionTokens = completionTokens,
-				TotalTokens = usageElement.GetProperty("total_tokens").GetInt32(),
-				CostUsd = cost,
-				Timestamp = DateTime.UtcNow
-			};
+			OpenAiUsageLog log = new(doc.RootElement.GetProperty("id").GetString()!, doc.RootElement.GetProperty("model").GetString()!, promptTokens, completionTokens, usageElement.GetProperty("total_tokens").GetInt32(), cost, DateTime.UtcNow, (int)durationMs, response.IsSuccessStatusCode, "", result.Intent.ToString(), "text", identity.Id, identity, subscription, subscription.Id, plan, plan.Id, message.Length, content.Length, "v1");
 
 			await _repository.CreateAsync(log, Guid.Empty);
 			await _repository.UnitOfWork.Commit();
@@ -140,19 +215,6 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 			};
 		}
 
-		public async Task<AiParsedResult> ParseAudio(
-			Stream audio,
-			string examplesJson,
-			Plan? plan,
-			string mimeType = "audio/ogg") // default para Twilio
-		{
-			// Transcreve o áudio
-			var text = await TranscribeAudio(audio, mimeType);
-
-			// Envia o texto para o parser de mensagens
-			return await ParseMessage(text, examplesJson, plan);
-		}
-
 		public async Task<string> TranscribeAudio(Stream audioStream, string mimeType)
 		{
 			_http.DefaultRequestHeaders.Authorization =
@@ -160,7 +222,6 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 
 			using var content = new MultipartFormDataContent();
 
-			// Copia o stream para MemoryStream (garante que possa ser lido múltiplas vezes)
 			using var ms = new MemoryStream();
 			await audioStream.CopyToAsync(ms);
 			ms.Position = 0;
@@ -168,7 +229,6 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 			var fileContent = new StreamContent(ms);
 			fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mimeType);
 
-			// Escolhe nome do arquivo baseado no tipo real
 			var fileName = mimeType.EndsWith("ogg") ? "audio.ogg" : "audio.wav";
 			content.Add(fileContent, "file", fileName);
 
@@ -188,5 +248,11 @@ namespace SecretariaIa.Infrasctructure.Data.Services
 			return doc.RootElement.GetProperty("text").GetString()!;
 		}
 
+		public async Task<AiParsedResult> ParseAudio(Stream audio, string examplesJson, Plan plan, Subscription subscription, IdentityUser identity, string mimeType = "audio/ogg")
+		{
+			var text = await TranscribeAudio(audio, mimeType);
+
+			return await ParseMessage(text, examplesJson, plan, subscription, identity);
+		}
 	}
 }

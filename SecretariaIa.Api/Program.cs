@@ -22,8 +22,8 @@ builder.Services.AddCors(options =>
 			policy
 				.WithOrigins(
 					"http://localhost:5173",
-					"https://secretariamonitoringapp-production.up.railway.app"
-					// seu frontend local (Vite)
+					"https://secretariamonitoringapp-production.up.railway.app/"
+				// seu frontend local (Vite)
 				)
 				.AllowAnyHeader()
 				.AllowAnyMethod()
